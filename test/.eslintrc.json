@@ -1,0 +1,10 @@
+{
+  "plugins": [
+    "ava"
+  ],
+  "parserOptions": { "ecmaVersion": 8 },
+  "extends": "plugin:ava/recommended",
+  "rules": {
+    "ava/prefer-async-await": "off"
+  }
+}
