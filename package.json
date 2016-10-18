@@ -1,10 +1,14 @@
 {
-  "name": "bullish",
+  "name": "@hydrant/bullish",
   "version": "0.1.0",
   "description": "A nice bull queue interface for hapi.",
   "main": "index.js",
   "author": "Filip Weiss <me@fiws.net>",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hydra-newmedia/bullish.git"
+  },
   "scripts": {
     "lint": "eslint --ignore-path .gitignore .",
     "lint-fix": "eslint --fix --ignore-path .gitignore .",
