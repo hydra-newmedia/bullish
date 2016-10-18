@@ -135,6 +135,39 @@ test('jobs can have validation that works', async t => {
   t.true(res === 5, 'returns data for valid input');
 });
 
+test('jobs can have complex validation', async t => {
+  const server = t.context.server;
+  t.plan(4);
+
+  const handler = (job) => {
+    return job.data;
+  };
+  server.bullish.job({
+    name: 'testValid2',
+    handler,
+    config: {
+      validate: {
+        input: {
+          a: joi.number().required(),
+          b: joi.object().default({ ok: true }),
+          c: {
+            d: joi.array()
+          }
+        }
+      }
+    }
+  });
+
+  t.throws(server.bullish.inject('testValid2'));
+
+  const res = await server.bullish.inject('testValid2', {
+    data: { a: 5 }
+  });
+  t.true(res.a === 5, 'returns valid a');
+  t.true(res.b.ok === true, 'returns valid b');
+  t.true(res.c === undefined, 'returns no c');
+});
+
 test('inject can skip validation', async t => {
   const server = t.context.server;
 

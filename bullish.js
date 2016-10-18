@@ -25,7 +25,7 @@ const jobOptionsSchema = joi.object({
     concurrency: joi.number().positive().default(1),
     pre: joi.array().min(1),
     validate: {
-      input: joi.object().type(joi.constructor),
+      input: joi.object(),
     },
   }).default(),
 });
