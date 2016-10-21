@@ -1,6 +1,6 @@
 {
   "name": "@hydrant/bullish",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "A nice bull queue interface for hapi.",
   "main": "bullish.js",
   "author": "Filip Weiss <me@fiws.net>",
