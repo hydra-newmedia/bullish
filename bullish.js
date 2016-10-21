@@ -14,6 +14,7 @@ const pluginOptionsSchema = joi.object({
     basePath: joi.string().default('/jobs'),
     tags: joi.array().items(joi.string()).default(['api']),
   }).default(),
+  isWorker: joi.boolean().default(true),
 });
 
 // bullish.job options schema
@@ -35,6 +36,11 @@ module.exports = (server, opts, next) => {
 
   const queues = {};
 
+  // event types
+  server.event('bullish complete');
+  server.event('bullish error');
+  server.event('bullish failed');
+
   // bullish.job functionality. adds a new queue
   const setupJob = (mod, cb) => {
 
@@ -45,37 +51,25 @@ module.exports = (server, opts, next) => {
 
     // performes input validation first
     const wrappedHandler = (job) => {
-      return new Promise((accept, reject) => {
-        // validation first
-        if (job._bullishValidation !== false && hoek.reach(config, 'validate.input')) {
-          // sync
-          joi.validate(job.data, config.validate.input, (err, val) => {
-            if (err) return reject(err);
-            job.data = val;
-          });
-        }
-        accept(job); // continue
-      }).then((job) => {
-        // execution
-        if (config.pre && job.pre === undefined) {
-          console.log('there is pre');
-          const preCalculations = config.pre.map(f => {
-            if (typeof f === 'function') return f(job);
-            else return f;
-          });
-          return Promise.all(preCalculations).then((res) => {
-            job.pre = res;
-            return handler(job); // with pre
-          });
-        } else return handler(job); // just the handler
-      });
+      // execution
+      if (config.pre && job.pre === undefined) {
+        const preCalculations = config.pre.map(f => {
+          if (typeof f === 'function') return f(job);
+          else return f;
+        });
+        return Promise.all(preCalculations).then((res) => {
+          job.pre = res;
+          return handler(job); // with pre
+        });
+      } else return handler(job); // just the handler
     };
 
-    queue._bullHandler = wrappedHandler;
+    queue._bullishConfig = config;
+    queue._bullishHandler = wrappedHandler;
 
     // start queue if process is worker
-    if (server.app.isWorker !== false) {
-      queue.process(config.concurrency, queue._bullHandler);
+    if (opts.isWorker !== false) {
+      queue.process(config.concurrency, queue._bullishHandler);
     }
 
     // logging
@@ -143,23 +137,49 @@ module.exports = (server, opts, next) => {
     else queue.once('ready', onReady);
   };
 
+  const validate = (queue, data) => {
+    return new Promise((accept, reject) => {
+      // validation first
+      if (hoek.reach(queue._bullishConfig, 'validate.input')) {
+        // sync
+        joi.validate(data, queue._bullishConfig.validate.input, (err, val) => {
+          if (err) return reject(err);
+          data = val;
+        });
+      }
+      return accept(data);
+    });
+  };
+
   // injects a job into a handler, without creating a new job
-  const inject = (name, opts = {}) => {
-    const data = opts.data || {};
+  const inject = (name, data, opts = {}) => {
     const q = queues[name];
 
     if (q === undefined) {
       return Promise.reject(new Error(`${name} job was never defined`));
     }
 
-    if (opts.validate !== false) opts.validate = true;
+    const validationEnabled = (opts.validate !== false && hoek.reach(q, '_bullishConfig.validate') !== undefined);
+    const pre = validationEnabled ? validate(q, data) : Promise.resolve(data);
 
-    return q._bullHandler({
-      data,
-      pre: opts.pre,
-      _bullishValidation: opts.validate,
-      simulated: opts.simulated || false,
+    return pre.then((data) => {
+      return q._bullishHandler({
+        data,
+        pre: opts.pre,
+        simulated: opts.simulated || false,
+      });
     });
+  };
+
+  const add = (name, data, opts = {}) => {
+    const q = queues[name];
+
+    if (q === undefined) {
+      return Promise.reject(new Error(`${name} job was never defined`));
+    }
+
+    const pre = (opts.validation !== false) ? validate(q, data) : Promise.resolve(data);
+    return pre.then((data) =>  q.add(data, opts)); // queue the job
   };
 
   // server.bullish
@@ -167,6 +187,7 @@ module.exports = (server, opts, next) => {
     job: setupJob,
     inject,
     queues,
+    add,
   });
 
   // server.plugins.bullish.queues

@@ -80,9 +80,8 @@ test('inject should set simulated if told to', async t => {
   };
   server.bullish.job({ name: 'testSimpleIsSimulated1', handler });
 
-  const res = await server.bullish.inject('testSimpleIsSimulated1', {
+  const res = await server.bullish.inject('testSimpleIsSimulated1', 'nothing', {
     simulated: true,
-    data: 'nothing'
   });
   t.true(res === true, 'returns true');
 });
@@ -96,9 +95,7 @@ test('inject should not set simulated if not told to', async t => {
   };
   server.bullish.job({ name: 'testSimpleIsSimulated1', handler });
 
-  const res = await server.bullish.inject('testSimpleIsSimulated1', {
-    data: 'nothing'
-  });
+  const res = await server.bullish.inject('testSimpleIsSimulated1', 'nothing');
   t.true(res === false, 'returns true');
 });
 
@@ -121,17 +118,17 @@ test('jobs can have validation that works', async t => {
 
   t.throws(
     server.bullish.inject('testValid1'),
-    '"value" must be a number',
+    '"value" is required',
     'throw – no value'
   );
 
   t.throws(
-    server.bullish.inject('testValid1', { data: 'no' }),
+    server.bullish.inject('testValid1', 'no'),
     '"value" must be a number',
     'throw – invalid value'
   );
 
-  const res = await server.bullish.inject('testValid1', { data: 5 });
+  const res = await server.bullish.inject('testValid1', 5);
   t.true(res === 5, 'returns data for valid input');
 });
 
@@ -147,13 +144,13 @@ test('jobs can have complex validation', async t => {
     handler,
     config: {
       validate: {
-        input: {
+        input: joi.object({
           a: joi.number().required(),
           b: joi.object().default({ ok: true }),
           c: {
             d: joi.array()
           }
-        }
+        }).required()
       }
     }
   });
@@ -161,7 +158,7 @@ test('jobs can have complex validation', async t => {
   t.throws(server.bullish.inject('testValid2'));
 
   const res = await server.bullish.inject('testValid2', {
-    data: { a: 5 }
+    a: 5
   });
   t.true(res.a === 5, 'returns valid a');
   t.true(res.b.ok === true, 'returns valid b');
@@ -184,11 +181,10 @@ test('inject can skip validation', async t => {
     }
   });
 
-  const res = await server.bullish.inject('testValid1', {
-    data: 'wrong',
+  const res = await server.bullish.inject('testValid1', 'invalid', {
     validate: false,
   });
-  t.true(res === 'wrong', 'returns the value (100)');
+  t.true(res === 'invalid', 'returns the value (100)');
 });
 
 // TODO: is this testable ?
@@ -206,9 +202,7 @@ test('jobs can a concurrency option', async t => {
     }
   });
 
-  const res = await server.bullish.inject('testValid1', {
-    data: 100,
-  });
+  const res = await server.bullish.inject('testValid1', 100);
   t.true(res === 100, 'returns the value (100)');
 });
 
@@ -236,8 +230,6 @@ test('jobs can have preconditions', async t => {
     }
   });
 
-  const res = await server.bullish.inject('testPre1', {
-    data: 'hello',
-  });
+  const res = await server.bullish.inject('testPre1', 'hello');
   t.true(res === 42, 'returns the first precondition result');
 });
