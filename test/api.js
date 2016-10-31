@@ -110,9 +110,7 @@ test('jobs can have validation that works', async t => {
     name: 'testValid1',
     handler,
     config: {
-      validate: {
-        input: joi.number().required(),
-      }
+      validate:  joi.number().required(),
     }
   });
 
@@ -143,15 +141,13 @@ test('jobs can have complex validation', async t => {
     name: 'testValid2',
     handler,
     config: {
-      validate: {
-        input: joi.object({
-          a: joi.number().required(),
-          b: joi.object().default({ ok: true }),
-          c: {
-            d: joi.array()
-          }
-        }).required()
-      }
+      validate: joi.object({
+        a: joi.number().required(),
+        b: joi.object().default({ ok: true }),
+        c: {
+          d: joi.array()
+        }
+      }).required()
     }
   });
 
@@ -175,9 +171,7 @@ test('inject can skip validation', async t => {
     name: 'testValid1',
     handler,
     config: {
-      validate: {
-        input: joi.number().required(),
-      }
+      validate: joi.number().required(),
     }
   });
 

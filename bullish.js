@@ -23,11 +23,13 @@ const jobOptionsSchema = joi.object({
   // pipeline: joi.array().items(joi.func()).min(1).required(), // maybe soon
   handler: joi.func().required(),
   config: joi.object({
+    routes: joi.alternatives().try(
+      joi.boolean().only(false),
+      joi.array().allow(['create', 'status', 'simulate'])
+    ).default(['create', 'status', 'simulate']),
     concurrency: joi.number().positive().default(1),
     pre: joi.array().min(1),
-    validate: {
-      input: joi.object(),
-    },
+    validate: joi.object(),
   }).default(),
 });
 
@@ -77,58 +79,67 @@ module.exports = (server, opts, next) => {
 
     // TODO: make route generation optional!
     // TODO: allow auth
+    if (config.routes === false) {
+      config.routes = [];
+    }
 
-    // status route
-    server.route({
-      path: `${opts.routes.basePath}/${mod.name}/{id}`,
-      method: 'GET',
-      handler: { bullishStatus: { queue } }, // formatted job
-      config: {
-        tags: opts.routes.tags,
-        // auth: { mode: 'optional' },
-        description: 'Gets the current job status of the specified job',
-        validate: {
-          params: { id: joi.number().min(1).max(100).required() },
-        }
-      }
-    });
-
-    // create route
-    server.route({
-      path: `${opts.routes.basePath}/${mod.name}`,
-      method: 'POST',
-      handler: { bullishCreate: { queue } },
-      config: {
-        tags: opts.routes.tags,
-        // auth: { mode: 'optional' },
-        description: 'Creates a new job',
-        validate: {
-          payload: {
-            options: require('./lib/jobOptions'),
-            data: hoek.reach(config, 'validate.input') || joi.any(),
+    if (config.routes.some(r => r === 'status')) {
+      // status route
+      server.route({
+        path: `${opts.routes.basePath}/${mod.name}/{id}`,
+        method: 'GET',
+        handler: { bullishStatus: { queue } }, // formatted job
+        config: {
+          tags: opts.routes.tags,
+          // auth: { mode: 'optional' },
+          description: 'Gets the current job status of the specified job',
+          validate: {
+            params: { id: joi.number().min(1).max(100).required() },
           }
         }
-      }
-    });
+      });
+    }
 
-    server.route({
-      path: `${opts.routes.basePath}/${mod.name}/simulate`,
-      method: 'POST',
-      handler: { bullishSimulate: { queue } },
-      config: {
-        tags: opts.routes.tags,
-        // auth: { mode: 'optional' },
-        description: 'Creates a new job',
-        validate: {
-          payload: {
-            options: require('./lib/jobOptions').strip(),
-            data: joi.any(),
-            pre: joi.array(),
-            validate: joi.boolean().default(true),
+    if (config.routes.some(r => r === 'create')) {
+      // create route
+      server.route({
+        path: `${opts.routes.basePath}/${mod.name}`,
+        method: 'POST',
+        handler: { bullishCreate: { queue } },
+        config: {
+          tags: opts.routes.tags,
+          // auth: { mode: 'optional' },
+          description: 'Creates a new job',
+          validate: {
+            payload: {
+              options: require('./lib/jobOptions'),
+              data: hoek.reach(config, 'validate') || joi.any(),
+            }
           }
         }
-      }
-    });
+      });
+    }
+
+    if (config.routes.some(r => r === 'simulate')) {
+      server.route({
+        path: `${opts.routes.basePath}/${mod.name}/simulate`,
+        method: 'POST',
+        handler: { bullishSimulate: { queue } },
+        config: {
+          tags: opts.routes.tags,
+          // auth: { mode: 'optional' },
+          description: 'Creates a new job',
+          validate: {
+            payload: {
+              options: require('./lib/jobOptions').strip(),
+              data: joi.any(),
+              pre: joi.array(),
+              validate: joi.boolean().default(true),
+            }
+          }
+        }
+      });
+    }
 
     queues[mod.name] = queue;
 
@@ -140,9 +151,9 @@ module.exports = (server, opts, next) => {
   const validate = (queue, data) => {
     return new Promise((accept, reject) => {
       // validation first
-      if (hoek.reach(queue._bullishConfig, 'validate.input')) {
+      if (hoek.reach(queue._bullishConfig, 'validate')) {
         // sync
-        joi.validate(data, queue._bullishConfig.validate.input, (err, val) => {
+        joi.validate(data, queue._bullishConfig.validate, (err, val) => {
           if (err) return reject(err);
           data = val;
         });
@@ -159,7 +170,7 @@ module.exports = (server, opts, next) => {
       return Promise.reject(new Error(`${name} job was never defined`));
     }
 
-    const validationEnabled = (opts.validate !== false && hoek.reach(q, '_bullishConfig.validate') !== undefined);
+    const validationEnabled = (opts.validate !== false && hoek.reach(q, '_bullishConfig.validate'));
     const pre = validationEnabled ? validate(q, data) : Promise.resolve(data);
 
     return pre.then((data) => {
@@ -188,6 +199,7 @@ module.exports = (server, opts, next) => {
     inject,
     queues,
     add,
+    jobOptions: require('./lib/jobOptions')
   });
 
   // server.plugins.bullish.queues
