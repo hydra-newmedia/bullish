@@ -26,7 +26,7 @@ const jobOptionsSchema = joi.object({
     routes: joi.alternatives().try(
       joi.boolean().only(false),
       joi.array().allow(['create', 'status', 'simulate'])
-    ).default(['create', 'status', 'simulate']),
+    ).default(['create', 'status']),
     concurrency: joi.number().positive().default(1),
     pre: joi.array().min(1),
     validate: joi.object(),
@@ -94,7 +94,7 @@ module.exports = (server, opts, next) => {
           // auth: { mode: 'optional' },
           description: 'Gets the current job status of the specified job',
           validate: {
-            params: { id: joi.number().min(1).max(100).required() },
+            params: { id: joi.number().min(1).required() },
           }
         }
       });
