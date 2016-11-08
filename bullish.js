@@ -49,7 +49,7 @@ module.exports = (server, opts, next) => {
     hoek.assert(mod !== undefined, 'need job options to work');
     mod = joi.attempt(mod, jobOptionsSchema);
     const { config, handler } = mod;
-    const queue = new Queue(mod.name, 6379, opts.redis.host);
+    const queue = new Queue(mod.name, opts.redis.port, opts.redis.host);
 
     // performes input validation first
     const wrappedHandler = (job) => {
