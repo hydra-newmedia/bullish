@@ -64,8 +64,12 @@ test('inject should reject with invalid name', t => {
 
 test('inject should work', async t => {
   const server = t.context.server;
+  t.plan(2);
 
-  const work = () => 1;
+  const work = (data) => {
+    t.true(data.jobId !== undefined, 'has a jobId');
+    return 1;
+  };
   server.bullish.job({ name: 'testSimpleInject1', handler: work });
   t.true(await server.bullish.inject('testSimpleInject1') === 1, 'returns 1');
 

@@ -175,6 +175,7 @@ module.exports = (server, opts, next) => {
 
     return pre.then((data) => {
       return q._bullishHandler({
+        jobId: `bullish-injected-${Date.now()}`,
         data,
         pre: opts.pre,
         simulated: opts.simulated || false,
