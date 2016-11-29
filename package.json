@@ -1,5 +1,5 @@
 {
-  "name": "@hydrant/bullish",
+  "name": "bullish",
   "version": "0.4.2",
   "description": "A nice bull queue interface for hapi.",
   "main": "bullish.js",
