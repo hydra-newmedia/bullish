@@ -56,7 +56,7 @@ Has the following options:
   * `validate` – `Boolean`: toggles input validation
 
 ```js
-bullish.add('sum', { a: 5, b: 10 }, { validation: false });
+server.bullish.add('sum', { a: 5, b: 10 }, { validation: false });
 ```
 
 
