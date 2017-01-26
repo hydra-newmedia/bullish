@@ -25,8 +25,9 @@ const jobOptionsSchema = joi.object({
   config: joi.object({
     routes: joi.alternatives().try(
       joi.boolean().only(false),
-      joi.array().allow(['create', 'status', 'simulate', 'lastId'])
-    ).default(['create', 'status', 'lastId']),
+      joi.array().allow(['create', 'status', 'simulate', 'latestId'])
+    ).default(['create', 'status', 'latestId']),
+    stripData: joi.boolean().default(false),
     concurrency: joi.number().positive().default(1),
     pre: joi.array().min(1),
     validate: joi.object(),
@@ -83,6 +84,16 @@ module.exports = (server, opts, next) => {
       config.routes = [];
     }
 
+    // config for pruning off data from responses
+    let responseCfg = {};
+    if (config.stripData)
+      responseCfg = {
+        modify: true,
+        schema: joi.object({
+          data: joi.strip(),
+        }).unknown(),
+      };
+
     if (config.routes.some(r => r === 'status')) {
       // status route
       server.route({
@@ -90,6 +101,7 @@ module.exports = (server, opts, next) => {
         method: 'GET',
         handler: { bullishStatus: { queue } }, // formatted job
         config: {
+          response: responseCfg,
           tags: opts.routes.tags,
           // auth: { mode: 'optional' },
           description: 'Gets the current job status of the specified job',
@@ -107,6 +119,7 @@ module.exports = (server, opts, next) => {
         method: 'POST',
         handler: { bullishCreate: { queue } },
         config: {
+          response: responseCfg,
           tags: opts.routes.tags,
           // auth: { mode: 'optional' },
           description: 'Creates a new job',
@@ -126,6 +139,7 @@ module.exports = (server, opts, next) => {
         method: 'POST',
         handler: { bullishSimulate: { queue } },
         config: {
+          response: responseCfg,
           tags: opts.routes.tags,
           // auth: { mode: 'optional' },
           description: 'Creates a new job',
@@ -141,11 +155,11 @@ module.exports = (server, opts, next) => {
       });
     }
 
-    if (config.routes.some(r => r === 'lastId')) {
+    if (config.routes.some(r => r === 'latestId')) {
       server.route({
-        path: `${opts.routes.basePath}/${mod.name}/lastId`,
+        path: `${opts.routes.basePath}/${mod.name}/latestId`,
         method: 'GET',
-        handler: { bullishLastId: { queue } },
+        handler: { bullishLatestId: { queue } },
         config: {
           tags: opts.routes.tags,
           // auth: { mode: 'optional' },
