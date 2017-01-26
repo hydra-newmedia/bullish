@@ -25,8 +25,8 @@ const jobOptionsSchema = joi.object({
   config: joi.object({
     routes: joi.alternatives().try(
       joi.boolean().only(false),
-      joi.array().allow(['create', 'status', 'simulate'])
-    ).default(['create', 'status']),
+      joi.array().allow(['create', 'status', 'simulate', 'lastId'])
+    ).default(['create', 'status', 'lastId']),
     concurrency: joi.number().positive().default(1),
     pre: joi.array().min(1),
     validate: joi.object(),
@@ -137,6 +137,19 @@ module.exports = (server, opts, next) => {
               validate: joi.boolean().default(true),
             }
           }
+        }
+      });
+    }
+
+    if (config.routes.some(r => r === 'lastId')) {
+      server.route({
+        path: `${opts.routes.basePath}/${mod.name}/lastId`,
+        method: 'GET',
+        handler: { bullishLastId: { queue } },
+        config: {
+          tags: opts.routes.tags,
+          // auth: { mode: 'optional' },
+          description: 'Gets the last used jobId',
         }
       });
     }
