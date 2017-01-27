@@ -1,11 +1,12 @@
 'use strict';
 
 const joi = require('joi');
+const delay = require('delay');
 
 module.exports = (server, opts, next) => {
   server.bullish.job({
     name: 'add5',
-    handler: (job) => Promise.resolve(job.data + 5),
+    handler: (job) => delay(5000).then(Promise.resolve(job.data + 5)),
     config: {
       validate: {
         input: joi.number(),

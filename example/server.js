@@ -2,7 +2,12 @@
 
 const hapi = require('hapi');
 
-const server = new hapi.Server();
+const server = new hapi.Server({
+  debug: {
+    log: ['error'],
+    request: ['error'],
+  }
+});
 server.connection({ port: 8080 });
 
 const plugins = [

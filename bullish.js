@@ -25,9 +25,8 @@ const jobOptionsSchema = joi.object({
   config: joi.object({
     routes: joi.alternatives().try(
       joi.boolean().only(false),
-      joi.array().allow(['create', 'status', 'simulate', 'latestId'])
-    ).default(['create', 'status', 'latestId']),
-    stripData: joi.boolean().default(false),
+      joi.array().allow(['create', 'status', 'simulate', 'list'])
+    ).default(['create', 'status', 'list']),
     concurrency: joi.number().positive().default(1),
     pre: joi.array().min(1),
     validate: joi.object(),
@@ -84,24 +83,15 @@ module.exports = (server, opts, next) => {
       config.routes = [];
     }
 
-    // config for pruning off data from responses
-    let responseCfg = {};
-    if (config.stripData)
-      responseCfg = {
-        modify: true,
-        schema: joi.object({
-          data: joi.strip(),
-        }).unknown(),
-      };
+    const stripData = config.stripData;
 
     if (config.routes.some(r => r === 'status')) {
       // status route
       server.route({
         path: `${opts.routes.basePath}/${mod.name}/{id}`,
         method: 'GET',
-        handler: { bullishStatus: { queue } }, // formatted job
+        handler: { bullishStatus: { queue, stripData } }, // formatted job
         config: {
-          response: responseCfg,
           tags: opts.routes.tags,
           // auth: { mode: 'optional' },
           description: 'Gets the current job status of the specified job',
@@ -117,9 +107,8 @@ module.exports = (server, opts, next) => {
       server.route({
         path: `${opts.routes.basePath}/${mod.name}`,
         method: 'POST',
-        handler: { bullishCreate: { queue } },
+        handler: { bullishCreate: { queue, stripData } },
         config: {
-          response: responseCfg,
           tags: opts.routes.tags,
           // auth: { mode: 'optional' },
           description: 'Creates a new job',
@@ -137,9 +126,8 @@ module.exports = (server, opts, next) => {
       server.route({
         path: `${opts.routes.basePath}/${mod.name}/simulate`,
         method: 'POST',
-        handler: { bullishSimulate: { queue } },
+        handler: { bullishSimulate: { queue, stripData } },
         config: {
-          response: responseCfg,
           tags: opts.routes.tags,
           // auth: { mode: 'optional' },
           description: 'Creates a new job',
@@ -164,6 +152,19 @@ module.exports = (server, opts, next) => {
           tags: opts.routes.tags,
           // auth: { mode: 'optional' },
           description: 'Gets the last used jobId',
+        }
+      });
+    }
+
+    if (config.routes.some(r => r === 'list')) {
+      server.route({
+        path: `${opts.routes.basePath}/${mod.name}`,
+        method: 'GET',
+        handler: { bullishList: { queue } },
+        config: {
+          tags: opts.routes.tags,
+          // auth: { mode: 'optional' },
+          description: 'Gets all jobs',
         }
       });
     }
