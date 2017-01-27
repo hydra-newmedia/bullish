@@ -27,6 +27,7 @@ const jobOptionsSchema = joi.object({
       joi.boolean().only(false),
       joi.array().allow(['create', 'status', 'simulate', 'list'])
     ).default(['create', 'status', 'list']),
+    stripData: joi.boolean().default(false),
     concurrency: joi.number().positive().default(1),
     pre: joi.array().min(1),
     validate: joi.object(),
