@@ -1,6 +1,6 @@
 {
   "name": "bullish",
-  "version": "0.5.0-3",
+  "version": "0.5.0-4",
   "description": "A nice bull queue interface for hapi.",
   "main": "bullish.js",
   "author": "Filip Weiss <me@fiws.net>",
