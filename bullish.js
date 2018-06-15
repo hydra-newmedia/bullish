@@ -6,15 +6,22 @@ const Queue = require('bull');
 
 // register options schema
 const pluginOptionsSchema = joi.object({
-  redis: joi.object({
-    host: joi.string().default('localhost'),
-    port: joi.number().default(6379),
-  }).default(),
-  routes: joi.object({
-    basePath: joi.string().default('/jobs'),
-    tags: joi.array().items(joi.string()).default(['api']),
-  }).default(),
-  isWorker: joi.boolean().default(true),
+  redis: joi
+    .object({
+      host: joi.string().default('localhost'),
+      port: joi.number().default(6379)
+    })
+    .default(),
+  routes: joi
+    .object({
+      basePath: joi.string().default('/jobs'),
+      tags: joi
+        .array()
+        .items(joi.string())
+        .default(['api'])
+    })
+    .default(),
+  isWorker: joi.boolean().default(true)
 });
 
 // bullish.job options schema
@@ -22,16 +29,21 @@ const jobOptionsSchema = joi.object({
   name: joi.string().required(),
   // pipeline: joi.array().items(joi.func()).min(1).required(), // maybe soon
   handler: joi.func().required(),
-  config: joi.object({
-    routes: joi.alternatives().try(
-      joi.boolean().only(false),
-      joi.array().allow(['create', 'status', 'simulate', 'list'])
-    ).default(['create', 'status', 'list']),
-    stripData: joi.boolean().default(false),
-    concurrency: joi.number().positive().default(1),
-    pre: joi.array().min(1),
-    validate: joi.object(),
-  }).default(),
+  config: joi
+    .object({
+      routes: joi
+        .alternatives()
+        .try(joi.boolean().only(false), joi.array().allow(['create', 'status', 'simulate', 'list']))
+        .default(['create', 'status', 'list']),
+      stripData: joi.boolean().default(false),
+      concurrency: joi
+        .number()
+        .positive()
+        .default(1),
+      pre: joi.array().min(1),
+      validate: joi.object()
+    })
+    .default()
 });
 
 module.exports = (server, opts, next) => {
@@ -46,21 +58,20 @@ module.exports = (server, opts, next) => {
 
   // bullish.job functionality. adds a new queue
   const setupJob = (mod, cb) => {
-
     hoek.assert(mod !== undefined, 'need job options to work');
     mod = joi.attempt(mod, jobOptionsSchema);
     const { config, handler } = mod;
-    const queue = new Queue(mod.name, opts.redis.port, opts.redis.host);
+    const queue = new Queue(mod.name, { redis: opts.redis });
 
     // performes input validation first
-    const wrappedHandler = (job) => {
+    const wrappedHandler = job => {
       // execution
       if (config.pre && job.pre === undefined) {
         const preCalculations = config.pre.map(f => {
           if (typeof f === 'function') return f(job);
           else return f;
         });
-        return Promise.all(preCalculations).then((res) => {
+        return Promise.all(preCalculations).then(res => {
           job.pre = res;
           return handler(job); // with pre
         });
@@ -97,7 +108,12 @@ module.exports = (server, opts, next) => {
           // auth: { mode: 'optional' },
           description: 'Gets the current job status of the specified job',
           validate: {
-            params: { id: joi.number().min(1).required() },
+            params: {
+              id: joi
+                .number()
+                .min(1)
+                .required()
+            }
           }
         }
       });
@@ -116,7 +132,7 @@ module.exports = (server, opts, next) => {
           validate: {
             payload: {
               options: require('./lib/jobOptions'),
-              data: hoek.reach(config, 'validate') || joi.any(),
+              data: hoek.reach(config, 'validate') || joi.any()
             }
           }
         }
@@ -137,7 +153,7 @@ module.exports = (server, opts, next) => {
               options: require('./lib/jobOptions').strip(),
               data: joi.any(),
               pre: joi.array(),
-              validate: joi.boolean().default(true),
+              validate: joi.boolean().default(true)
             }
           }
         }
@@ -152,7 +168,7 @@ module.exports = (server, opts, next) => {
         config: {
           tags: opts.routes.tags,
           // auth: { mode: 'optional' },
-          description: 'Gets the last used jobId',
+          description: 'Gets the last used jobId'
         }
       });
     }
@@ -165,7 +181,7 @@ module.exports = (server, opts, next) => {
         config: {
           tags: opts.routes.tags,
           // auth: { mode: 'optional' },
-          description: 'Gets all jobs',
+          description: 'Gets all jobs'
         }
       });
     }
@@ -199,15 +215,15 @@ module.exports = (server, opts, next) => {
       return Promise.reject(new Error(`${name} job was never defined`));
     }
 
-    const validationEnabled = (opts.validate !== false && hoek.reach(q, '_bullishConfig.validate'));
+    const validationEnabled = opts.validate !== false && hoek.reach(q, '_bullishConfig.validate');
     const pre = validationEnabled ? validate(q, data) : Promise.resolve(data);
 
-    return pre.then((data) => {
+    return pre.then(data => {
       return q._bullishHandler({
         jobId: `bullish-injected-${Date.now()}`,
         data,
         pre: opts.pre,
-        simulated: opts.simulated || false,
+        simulated: opts.simulated || false
       });
     });
   };
@@ -219,8 +235,8 @@ module.exports = (server, opts, next) => {
       return Promise.reject(new Error(`${name} job was never defined`));
     }
 
-    const pre = (opts.validation !== false) ? validate(q, data) : Promise.resolve(data);
-    return pre.then((data) =>  q.add(data, opts)); // queue the job
+    const pre = opts.validation !== false ? validate(q, data) : Promise.resolve(data);
+    return pre.then(data => q.add(data, opts)); // queue the job
   };
 
   // server.bullish
@@ -239,5 +255,5 @@ module.exports = (server, opts, next) => {
 };
 
 module.exports.attributes = {
-  pkg: require('./package.json'),
+  pkg: require('./package.json')
 };
