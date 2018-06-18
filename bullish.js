@@ -223,7 +223,9 @@ module.exports = (server, opts, next) => {
         jobId: `bullish-injected-${Date.now()}`,
         data,
         pre: opts.pre,
-        simulated: opts.simulated || false
+        simulated: opts.simulated || false,
+        progress: () => {}
+        //@todo: try to add the actual Job prototype
       });
     });
   };
