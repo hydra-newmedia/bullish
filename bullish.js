@@ -225,7 +225,6 @@ module.exports = (server, opts, next) => {
         pre: opts.pre,
         simulated: opts.simulated || false,
         progress: () => {}
-        //@todo: try to add the actual Job prototype
       });
     });
   };
