@@ -20,10 +20,10 @@ const register = server => {
     name: 'testPre',
     handler: (job) => {
       if (job.simulated === true) console.log('The cake is a lie');
-      return job.data + job.pre[0];
+      return job.data.input + job.pre[0];
     },
     config: {
-      pre: [ (job) => job.data * 2 ],
+      pre: [ (job) => job.data.input * 2 ],
       validate: {
         input: joi.number(),
       }
