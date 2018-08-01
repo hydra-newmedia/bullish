@@ -26,7 +26,6 @@ const plugins = [
       }
     }
   },
-  require('blipp')
 ];
 
 server.register(plugins, e => {
