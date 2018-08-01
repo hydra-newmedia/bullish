@@ -2,16 +2,9 @@ const test = require('ava');
 const hapi = require('hapi');
 const joi = require('joi');
 
-test.beforeEach.cb(t => {
-  const server = new hapi.Server();
-  server.connection({ port: 9999 }); // never started
-  server.register({
-    register: require('../bullish')
-  }, e => {
-    t.true(e === undefined, 'no error');
-    t.context.server = server;
-    t.end();
-  });
+test.beforeEach(async t => {
+  t.context.server = new hapi.Server();
+  await t.context.server.register(require('../bullish'));
 });
 
 test('throw with missing options', t => {
