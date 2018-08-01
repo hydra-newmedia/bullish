@@ -46,7 +46,7 @@ const jobOptionsSchema = joi.object({
     .default()
 });
 
-module.exports = (server, opts, next) => {
+const register = async (server, opts) => {
   opts = joi.attempt(opts, pluginOptionsSchema); // validate register options
 
   const queues = {};
@@ -57,7 +57,7 @@ module.exports = (server, opts, next) => {
   server.event('bullish failed');
 
   // bullish.job functionality. adds a new queue
-  const setupJob = (mod, cb) => {
+  const setupJob = mod => {
     hoek.assert(mod !== undefined, 'need job options to work');
     mod = joi.attempt(mod, jobOptionsSchema);
     const { config, handler } = mod;
@@ -87,7 +87,7 @@ module.exports = (server, opts, next) => {
     }
 
     // logging
-    require('./lib/queueLogging.js')(queue, server);
+    require('./lib/queueEvents.js')(queue, server);
 
     // TODO: make route generation optional!
     // TODO: allow auth
@@ -187,9 +187,6 @@ module.exports = (server, opts, next) => {
     }
 
     queues[mod.name] = queue;
-
-    const onReady = cb || function noop() {};
-    onReady();
   };
 
   const validate = (queue, data) => {
@@ -252,9 +249,10 @@ module.exports = (server, opts, next) => {
   // server.plugins.bullish.queues
   server.expose('queues', queues);
 
-  server.register(require('./lib/handlers.js'), next);
+  await server.register(require('./lib/handlers.js'));
 };
 
-module.exports.attributes = {
-  pkg: require('./package.json')
+module.exports.plugin = {
+  pkg: require('./package.json'),
+  register,
 };

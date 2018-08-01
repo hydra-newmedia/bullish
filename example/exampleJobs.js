@@ -3,10 +3,12 @@
 const joi = require('joi');
 const delay = require('delay');
 
-module.exports = (server, opts, next) => {
+const register = server => {
   server.bullish.job({
     name: 'add5',
-    handler: (job) => delay(5000).then(Promise.resolve(job.data + 5)),
+    handler: (job) => delay(5000).then(() => {
+      return Promise.resolve(job.data.input + 5);
+    }),
     config: {
       validate: {
         input: joi.number(),
@@ -28,10 +30,10 @@ module.exports = (server, opts, next) => {
     }
   });
 
-  next();
 };
 
-module.exports.attributes = {
+module.exports.plugin = {
   name: 'bullish-example-jobs',
   version: '1.0.0',
+  register,
 };

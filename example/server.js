@@ -3,22 +3,20 @@
 const hapi = require('hapi');
 
 const server = new hapi.Server({
+  port: 8080,
   debug: {
-    log: ['error'],
-    request: ['error'],
+    log: ['*'],
+    request: ['*'],
   }
 });
-server.connection({ port: 8080 });
 
 const plugins = [
-  {
-    register: require('../bullish'),
-  },
+  require('../bullish'),
   require('./exampleJobs'),
   // bullish does not require hapi-swagger
   require('vision'),
   require('inert'), {
-    register: require('hapi-swagger'),
+    plugin: require('hapi-swagger'),
     options: {
       info: {
         title: 'bullish test API',
@@ -28,11 +26,8 @@ const plugins = [
   },
 ];
 
-server.register(plugins, e => {
-  if (e) console.error(e);
-  else console.log('Bullish registered');
-  server.start((err) => {
-    if (err) throw err;
-    console.log(`example server started @ ${server.info.uri}`);
-  });
+server.register(plugins).then(async () => {
+  console.log('Bullish registered');
+  await server.start();
+  console.log(`example server started @ ${server.info.uri}`);
 });
