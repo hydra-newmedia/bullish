@@ -3,7 +3,7 @@ const hapi = require('hapi');
 
 test.beforeEach.cb(t => {
   const server = new hapi.Server();
-  server.connection({ port: 9999 }); // never started
+  server.connection({ port: 9999 }); // never started;
   server.register({
     register: require('../bullish')
   }, e => {
@@ -21,8 +21,8 @@ test.cb('throw with missing options', t => {
   const sum = (job) => job.data.a + job.data.b;
   server.bullish.job({ name: 'testFullInvalid1', handler: sum }, (e) => {
     t.true(e === undefined, 'no error');
-    t.throws(server.bullish.add(), /job was never defined/, 'no parameters');
-    t.throws(server.bullish.add('notThere'), /notThere job was never defined/, 'invalid queue');
+    t.throws(() => server.bullish.add(), /name parameter is required/, 'no parameters');
+    t.throws(() => server.bullish.add('notThere'), /job was never defined/, 'invalid queue');
     t.end();
   });
 
@@ -52,7 +52,7 @@ test.cb('emit an error if there is one', t => {
     t.true(err.bullish !== undefined, 'error has bullish metadata');
     t.true(err.bullish.queueName !== undefined, 'error has queueName');
     t.true(err.bullish.job !== undefined, 'error has job');
-    t.true(err.bullish.job.jobId !== undefined, 'job has id');
+    t.true(err.bullish.job.id !== undefined, 'job has id');
     t.end();
   });
 

@@ -168,7 +168,7 @@ module.exports = (server, opts, next) => {
         config: {
           tags: opts.routes.tags,
           // auth: { mode: 'optional' },
-          description: 'Gets the last used jobId'
+          description: 'Gets the last used id'
         }
       });
     }
@@ -189,8 +189,7 @@ module.exports = (server, opts, next) => {
     queues[mod.name] = queue;
 
     const onReady = cb || function noop() {};
-    if (queue.client.ready && queue.bclient.ready && queue.eclient.ready) onReady();
-    else queue.once('ready', onReady);
+    onReady();
   };
 
   const validate = (queue, data) => {
@@ -212,7 +211,7 @@ module.exports = (server, opts, next) => {
     const q = queues[name];
 
     if (q === undefined) {
-      return Promise.reject(new Error(`${name} job was never defined`));
+      throw new Error(`${name} job was never defined`);
     }
 
     const validationEnabled = opts.validate !== false && hoek.reach(q, '_bullishConfig.validate');
@@ -220,7 +219,7 @@ module.exports = (server, opts, next) => {
 
     return pre.then(data => {
       return q._bullishHandler({
-        jobId: `bullish-injected-${Date.now()}`,
+        id: `bullish-injected-${Date.now()}`,
         data,
         pre: opts.pre,
         simulated: opts.simulated || false,
@@ -232,8 +231,9 @@ module.exports = (server, opts, next) => {
   const add = (name, data, opts = {}) => {
     const q = queues[name];
 
+    if (name === undefined) throw new Error('name parameter is required');
     if (q === undefined) {
-      return Promise.reject(new Error(`${name} job was never defined`));
+      throw new Error(`${name} job was never defined`);
     }
 
     const pre = opts.validation !== false ? validate(q, data) : Promise.resolve(data);
