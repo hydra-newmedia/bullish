@@ -58,7 +58,7 @@ test('register queue with valid options', t => {
 test('inject should reject with invalid name', t => {
   const server = t.context.server;
 
-  t.throws(server.bullish.inject('notFound'), 'notFound job was never defined');
+  t.throws(() => server.bullish.inject('notFound'), 'notFound job was never defined');
 
 });
 
@@ -67,7 +67,7 @@ test('inject should work', async t => {
   t.plan(2);
 
   const work = (data) => {
-    t.true(data.jobId !== undefined, 'has a jobId');
+    t.true(data.id !== undefined, 'has a id');
     return 1;
   };
   server.bullish.job({ name: 'testSimpleInject1', handler: work });
